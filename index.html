@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-Time QR Code Scanner</title>
+</head>
+<body>
+    <h1>Real-Time QR Code Scanner</h1>
+    <video id="video" width="320" height="240" autoplay></video>
+    <canvas id="canvas" width="320" height="240" style="display: none;"></canvas>
+    <p id="result"></p>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr/dist/jsQR.js"></script>
+    <script>
+        const video = document.getElementById('video');
+        const canvasElement = document.getElementById('canvas');
+        const canvas = canvasElement.getContext('2d');
+        const resultElement = document.getElementById('result');
+
+        // Use facingMode: environment to attempt to get the back camera on mobile devices
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
+        .then(function(stream) {
+            video.srcObject = stream;
+            video.setAttribute("playsinline", true); // Required to play video inline on iOS
+            video.play();
+            requestAnimationFrame(tick);
+        })
+        .catch(function(error) {
+            console.error("Cannot access camera", error);
+            resultElement.textContent = 'Cannot access camera';
+        });
+
+        function tick() {
+            if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                canvasElement.hidden = true; // Hide the canvas element
+                canvasElement.height = video.videoHeight;
+                canvasElement.width = video.videoWidth;
+                canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                var code = jsQR(imageData.data, imageData.width, imageData.height, {
+                    inversionAttempts: "dontInvert",
+                });
+                if (code) {
+                    resultElement.textContent = 'Found QR code: ' + code.data;
+                } else {
+                    resultElement.textContent = 'No QR code detected';
+                }
+            }
+            requestAnimationFrame(tick);
+        }
+    </script>
+</body>
+</html>
