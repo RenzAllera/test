@@ -17,22 +17,25 @@
         const canvas = canvasElement.getContext('2d');
         const resultElement = document.getElementById('result');
 
-        // Use facingMode: environment to attempt to get the back camera on mobile devices
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } })
-        .then(function(stream) {
-            video.srcObject = stream;
-            video.setAttribute("playsinline", true); // Required to play video inline on iOS
-            video.play();
-            requestAnimationFrame(tick);
-        })
-        .catch(function(error) {
-            console.error("Cannot access camera", error);
-            resultElement.textContent = 'Cannot access camera';
-        });
+        function setupCamera(facingMode) {
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } })
+            .then(function(stream) {
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true); // Required to play video inline on iOS
+                video.play();
+                requestAnimationFrame(tick);
+            })
+            .catch(function(error) {
+                console.error("Cannot access camera", error);
+                resultElement.textContent = 'Cannot access camera. Trying alternate camera...';
+                // Try the opposite camera if the preferred one fails
+                setupCamera(facingMode === 'environment' ? 'user' : 'environment');
+            });
+        }
 
         function tick() {
             if (video.readyState === video.HAVE_ENOUGH_DATA) {
-                canvasElement.hidden = true; // Hide the canvas element
+                canvasElement.hidden = true;
                 canvasElement.height = video.videoHeight;
                 canvasElement.width = video.videoWidth;
                 canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
@@ -48,6 +51,9 @@
             }
             requestAnimationFrame(tick);
         }
+
+        // Start with the 'environment' facing mode as default
+        setupCamera('environment');
     </script>
 </body>
 </html>
